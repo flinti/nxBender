@@ -14,9 +14,16 @@ class SSLConnection(object):
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         sock.connect((host, port))
 
-        self.s = ssl.wrap_socket(sock)
+        pinning = getattr(options, 'fingerprint', False);
 
-        if getattr(options, 'fingerprint', False):
+        context = ssl.create_default_context()
+        if pinning:
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+
+        self.s = context.wrap_socket(sock)
+
+        if pinning:
             if self.fingerprint != options.fingerprint.lower():
                 logging.error("Certificate fingerprint verification failed; server's fingerprint is %s" % self.fingerprint)
                 sys.exit(1)
